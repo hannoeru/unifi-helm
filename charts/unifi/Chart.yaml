@@ -2,7 +2,7 @@ apiVersion: v2
 name: unifi
 description: A Helm chart for UniFi Network Controller
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "v9.3.43"
 keywords:
   - unifi
