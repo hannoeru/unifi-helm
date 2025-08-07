@@ -1,0 +1,141 @@
+# Default values for unifi.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: ghcr.io/jacobalberty/unifi-docker
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "v9.3.43"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  fsGroup: 999
+  runAsUser: 999
+  runAsGroup: 999
+
+securityContext: {}
+
+service:
+  type: ClusterIP
+  # UniFi Controller ports (based on official documentation)
+  deviceControl: 8080      # Device command/control (required)
+  webInterface: 8443       # Web interface + API (required)
+  stun: 3478              # STUN service (required)
+  httpsPortal: 8843       # HTTPS portal (optional)
+  httpPortal: 8880        # HTTP portal (optional)
+  speedtest: 6789         # Speed Test (unifi5 only) (optional)
+  discovery: 10001        # Device discovery (optional)
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: unifi.local
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  #  - secretName: unifi-tls
+  #    hosts:
+  #      - unifi.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 1000m
+  #   memory: 1024Mi
+  # requests:
+  #   cpu: 500m
+  #   memory: 512Mi
+
+persistence:
+  enabled: true
+  # existingClaim: ""
+  storageClass: ""
+  accessMode: ReadWriteOnce
+  size: 8Gi
+  annotations: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# PodDisruptionBudget configuration
+podDisruptionBudget:
+  enabled: false
+  # minAvailable: 1
+  # maxUnavailable: 1
+
+# UniFi specific configuration
+unifi:
+  # UniFi Controller environment variables
+  env:
+    TZ: "UTC"
+    RUNAS_UID0: "false"
+    UNIFI_UID: "999"
+    UNIFI_GID: "999"
+    
+  # Additional environment variables
+  extraEnv: []
+  # - name: CUSTOM_VAR
+  #   value: "custom_value"
+
+# MongoDB subchart configuration
+mongodb:
+  enabled: true
+  auth:
+    enabled: false
+    # rootUser: root
+    # rootPassword: ""
+    # username: unifi
+    # password: ""
+    # database: unifi
+  architecture: standalone
+  persistence:
+    enabled: true
+    size: 8Gi
+  service:
+    ports:
+      mongodb: 27017
+  # MongoDB configuration for UniFi
+  initdbScripts:
+    init-unifi.js: |
+      db = db.getSiblingDB('unifi');
+      db.createUser({
+        user: 'unifi',
+        pwd: 'unifi',
+        roles: [{ role: 'dbOwner', db: 'unifi' }]
+      });
+  # Resource limits for MongoDB
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+    requests:
+      cpu: 500m
+      memory: 512Mi

@@ -1,0 +1,81 @@
+suite: test service
+templates:
+  - service.yaml
+tests:
+  - it: should render service with default values
+    asserts:
+      - isKind:
+          of: Service
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-unifi
+      - equal:
+          path: spec.type
+          value: ClusterIP
+      - equal:
+          path: spec.ports[0].port
+          value: 8080
+      - equal:
+          path: spec.ports[0].name
+          value: device-control
+      - equal:
+          path: spec.ports[1].port
+          value: 8443
+      - equal:
+          path: spec.ports[1].name
+          value: web-interface
+
+  - it: should render service with LoadBalancer type
+    set:
+      service.type: LoadBalancer
+    asserts:
+      - equal:
+          path: spec.type
+          value: LoadBalancer
+
+  - it: should render service with custom ports
+    set:
+      service.deviceControl: 9080
+      service.webInterface: 9443
+    asserts:
+      - equal:
+          path: spec.ports[0].port
+          value: 9080
+      - equal:
+          path: spec.ports[1].port
+          value: 9443
+
+  - it: should have correct selector labels
+    asserts:
+      - equal:
+          path: spec.selector
+          value:
+            app.kubernetes.io/name: unifi
+            app.kubernetes.io/instance: RELEASE-NAME
+
+  - it: should render all required ports
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 7
+      - contains:
+          path: spec.ports
+          content:
+            name: device-control
+            port: 8080
+            protocol: TCP
+            targetPort: device-control
+      - contains:
+          path: spec.ports
+          content:
+            name: web-interface
+            port: 8443
+            protocol: TCP
+            targetPort: web-interface
+      - contains:
+          path: spec.ports
+          content:
+            name: stun
+            port: 3478
+            protocol: UDP
+            targetPort: stun

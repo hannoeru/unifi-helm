@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "unifi.fullname" . }}
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      {{- include "unifi.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "unifi.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "unifi.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: device-control
+              containerPort: 8080
+              protocol: TCP
+            - name: web-interface
+              containerPort: 8443
+              protocol: TCP
+            - name: stun
+              containerPort: 3478
+              protocol: UDP
+            - name: https-portal
+              containerPort: 8843
+              protocol: TCP
+            - name: http-portal
+              containerPort: 8880
+              protocol: TCP
+            - name: speedtest
+              containerPort: 6789
+              protocol: TCP
+            - name: discovery
+              containerPort: 10001
+              protocol: UDP
+          env:
+            - name: TZ
+              value: {{ .Values.unifi.env.TZ | quote }}
+            - name: RUNAS_UID0
+              value: {{ .Values.unifi.env.RUNAS_UID0 | quote }}
+            - name: UNIFI_UID
+              value: {{ .Values.unifi.env.UNIFI_UID | quote }}
+            - name: UNIFI_GID
+              value: {{ .Values.unifi.env.UNIFI_GID | quote }}
+            {{- if .Values.mongodb.enabled }}
+            - name: DB_URI
+              value: "mongodb://{{ include "unifi.fullname" . }}-mongodb:27017/unifi"
+            - name: STATDB_URI
+              value: "mongodb://{{ include "unifi.fullname" . }}-mongodb:27017/unifi_stat"
+            - name: DB_NAME
+              value: "unifi"
+            {{- end }}
+            {{- with .Values.unifi.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /status
+              port: web-interface
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /status
+              port: web-interface
+              scheme: HTTPS
+            initialDelaySeconds: 15
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: unifi-data
+              mountPath: /unifi
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      volumes:
+        - name: unifi-data
+          {{- if .Values.persistence.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "unifi.fullname" . }}-data
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

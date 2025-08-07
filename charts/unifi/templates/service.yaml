@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "unifi.fullname" . }}
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.deviceControl }}
+      targetPort: device-control
+      protocol: TCP
+      name: device-control
+    - port: {{ .Values.service.webInterface }}
+      targetPort: web-interface
+      protocol: TCP
+      name: web-interface
+    - port: {{ .Values.service.stun }}
+      targetPort: stun
+      protocol: UDP
+      name: stun
+    - port: {{ .Values.service.httpsPortal }}
+      targetPort: https-portal
+      protocol: TCP
+      name: https-portal
+    - port: {{ .Values.service.httpPortal }}
+      targetPort: http-portal
+      protocol: TCP
+      name: http-portal
+    - port: {{ .Values.service.speedtest }}
+      targetPort: speedtest
+      protocol: TCP
+      name: speedtest
+    - port: {{ .Values.service.discovery }}
+      targetPort: discovery
+      protocol: UDP
+      name: discovery
+  selector:
+    {{- include "unifi.selectorLabels" . | nindent 4 }}

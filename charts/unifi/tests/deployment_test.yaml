@@ -1,0 +1,96 @@
+suite: test deployment
+templates:
+  - deployment.yaml
+tests:
+  - it: should render deployment with default values
+    asserts:
+      - isKind:
+          of: Deployment
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-unifi
+      - equal:
+          path: spec.replicas
+          value: 1
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/jacobalberty/unifi-docker:v9.3.43"
+      - equal:
+          path: spec.template.spec.containers[0].ports[0].containerPort
+          value: 8080
+      - equal:
+          path: spec.template.spec.containers[0].ports[1].containerPort
+          value: 8443
+
+  - it: should render deployment with custom image
+    set:
+      image.repository: custom/unifi
+      image.tag: custom-tag
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "custom/unifi:custom-tag"
+
+  - it: should render deployment with custom replica count
+    set:
+      replicaCount: 3
+    asserts:
+      - equal:
+          path: spec.replicas
+          value: 3
+
+  - it: should render deployment with MongoDB enabled
+    set:
+      mongodb.enabled: true
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: DB_URI
+            value: "mongodb://RELEASE-NAME-unifi-mongodb:27017/unifi"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: STATDB_URI
+            value: "mongodb://RELEASE-NAME-unifi-mongodb:27017/unifi_stat"
+
+  - it: should render deployment with custom environment variables
+    set:
+      unifi.extraEnv:
+        - name: CUSTOM_VAR
+          value: custom_value
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: CUSTOM_VAR
+            value: custom_value
+
+  - it: should render deployment with security context
+    asserts:
+      - equal:
+          path: spec.template.spec.securityContext.fsGroup
+          value: 999
+      - equal:
+          path: spec.template.spec.securityContext.runAsUser
+          value: 999
+      - equal:
+          path: spec.template.spec.securityContext.runAsGroup
+          value: 999
+
+  - it: should render deployment with resource limits
+    set:
+      resources:
+        limits:
+          cpu: 1000m
+          memory: 1Gi
+        requests:
+          cpu: 500m
+          memory: 512Mi
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.cpu
+          value: 1000m
+      - equal:
+          path: spec.template.spec.containers[0].resources.limits.memory
+          value: 1Gi

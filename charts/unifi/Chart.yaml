@@ -1,0 +1,22 @@
+apiVersion: v2
+name: unifi
+description: A Helm chart for UniFi Network Controller
+type: application
+version: 0.1.0
+appVersion: "v9.3.43"
+keywords:
+  - unifi
+  - networking
+  - controller
+  - ubiquiti
+home: https://ui.com/
+sources:
+  - https://github.com/jacobalberty/unifi-docker
+maintainers:
+  - name: hannoeru
+    email: me@hanlee.co
+dependencies:
+  - name: mongodb
+    version: "16.5.33"
+    repository: "https://charts.bitnami.com/bitnami"
+    condition: mongodb.enabled
