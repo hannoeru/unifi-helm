@@ -58,7 +58,7 @@ make test
 
 ```bash
 make help                 # Show available targets
-make install-tools        # Install required development tools
+make install-tools        # Install all development tools
 make test                 # Run unit tests and linting
 make test-full           # Run all tests including install tests
 make test-kind           # Run tests with temporary kind cluster
