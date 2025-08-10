@@ -7,9 +7,9 @@ A collection of Helm charts for UniFi Network infrastructure components.
 
 ## Charts
 
-| Chart | Description | Version |
-|-------|-------------|---------|
-| [unifi](charts/unifi/) | UniFi Network Controller | 0.2.0 |
+| Chart | Description |
+|-------|-------------|
+| [unifi](charts/unifi/) | UniFi Network Controller |
 
 ## Quick Start
 
