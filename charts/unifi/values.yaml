@@ -26,11 +26,22 @@ serviceAccount:
 podAnnotations: {}
 
 podSecurityContext:
+  # s6-overlay requires root to initialize, then drops to PUID/PGID
+  runAsUser: 0
+  runAsGroup: 0
+  # Set volume ownership to UniFi user (1000)
   fsGroup: 1000
-  runAsUser: 1000
-  runAsGroup: 1000
 
-securityContext: {}
+securityContext:
+  # Allow s6-overlay to drop privileges after initialization
+  allowPrivilegeEscalation: true
+  capabilities:
+    add:
+      # Required for s6-overlay to switch user/group contexts
+      - SETGID
+      - SETUID
+      # Required for file permission management during initialization
+      - DAC_OVERRIDE
 
 service:
   type: ClusterIP
