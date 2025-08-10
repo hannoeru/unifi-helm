@@ -1,0 +1,93 @@
+suite: test traefik transport
+templates:
+  - traefik-transport.yaml
+tests:
+  - it: should not render traefik transport by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render traefik transport when ingress is disabled
+    set:
+      ingress.enabled: false
+      ingress.className: traefik
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render traefik transport when className is not traefik
+    set:
+      ingress.enabled: true
+      ingress.className: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render traefik transport when ingress enabled with traefik className
+    set:
+      ingress.enabled: true
+      ingress.className: traefik
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ServersTransport
+      - equal:
+          path: apiVersion
+          value: traefik.containo.us/v1alpha1
+      - equal:
+          path: metadata.name
+          value: unifi-transport
+      - equal:
+          path: spec.serverName
+          value: RELEASE-NAME-unifi
+      - equal:
+          path: spec.insecureSkipVerify
+          value: true
+
+  - it: should render traefik transport when className contains traefik
+    set:
+      ingress.enabled: true
+      ingress.className: traefik-internal
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: unifi-transport
+
+  - it: should render traefik transport when className is traefik-v2
+    set:
+      ingress.enabled: true
+      ingress.className: traefik-v2
+    asserts:
+      - hasDocuments:
+          count: 1
+
+  - it: should render traefik transport with correct labels
+    set:
+      ingress.enabled: true
+      ingress.className: traefik
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: unifi
+      - equal:
+          path: metadata.labels["app.kubernetes.io/instance"]
+          value: RELEASE-NAME
+      - exists:
+          path: metadata.labels["app.kubernetes.io/version"]
+      - equal:
+          path: metadata.labels["app.kubernetes.io/managed-by"]
+          value: Helm
+
+  - it: should handle case insensitive traefik className
+    set:
+      ingress.enabled: true
+      ingress.className: TRAEFIK
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: unifi-transport

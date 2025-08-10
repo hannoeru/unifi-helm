@@ -43,12 +43,14 @@ spec:
             - name: stun
               containerPort: 3478
               protocol: UDP
-            - name: https-portal
+            {{- if .Values.captivePortal.enabled }}
+            - name: captive-https
               containerPort: 8843
               protocol: TCP
-            - name: http-portal
+            - name: captive-http
               containerPort: 8880
               protocol: TCP
+            {{- end }}
             - name: speedtest
               containerPort: 6789
               protocol: TCP

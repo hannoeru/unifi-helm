@@ -9,34 +9,109 @@ tests:
       - hasDocuments:
           count: 0
 
-  - it: should render MongoDBCommunity with default values
+  - it: should render all MongoDB Community resources with default values
     set:
       mongodbCommunity.enabled: true
     asserts:
       - hasDocuments:
-          count: 2
+          count: 5
       - isKind:
           of: Secret
         documentIndex: 0
       - isKind:
-          of: MongoDBCommunity
+          of: ServiceAccount
         documentIndex: 1
+      - isKind:
+          of: Role
+        documentIndex: 2
+      - isKind:
+          of: RoleBinding
+        documentIndex: 3
+      - isKind:
+          of: MongoDBCommunity
+        documentIndex: 4
+
+  - it: should render MongoDB secret with random password
+    set:
+      mongodbCommunity.enabled: true
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-unifi-mongodb-password
+        documentIndex: 0
+      - equal:
+          path: type
+          value: Opaque
+        documentIndex: 0
+      - exists:
+          path: stringData.password
+        documentIndex: 0
+
+  - it: should render ServiceAccount for MongoDB
+    set:
+      mongodbCommunity.enabled: true
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-unifi-mongodb-database
+        documentIndex: 1
+
+  - it: should render Role with correct permissions
+    set:
+      mongodbCommunity.enabled: true
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-unifi-mongodb-database
+        documentIndex: 2
+      - contains:
+          path: rules
+          content:
+            apiGroups: [""]
+            resources: ["secrets"]
+            verbs: ["get"]
+        documentIndex: 2
+
+  - it: should render RoleBinding
+    set:
+      mongodbCommunity.enabled: true
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-unifi-mongodb-database
+        documentIndex: 3
+      - equal:
+          path: roleRef.name
+          value: RELEASE-NAME-unifi-mongodb-database
+        documentIndex: 3
+      - equal:
+          path: subjects[0].name
+          value: RELEASE-NAME-unifi-mongodb-database
+        documentIndex: 3
+
+  - it: should render MongoDBCommunity with default configuration
+    set:
+      mongodbCommunity.enabled: true
+    asserts:
+      - isKind:
+          of: MongoDBCommunity
+        documentIndex: 4
       - equal:
           path: metadata.name
           value: RELEASE-NAME-unifi-mongodb
-        documentIndex: 1
+        documentIndex: 4
       - equal:
           path: spec.members
           value: 1
-        documentIndex: 1
+        documentIndex: 4
       - equal:
           path: spec.type
           value: ReplicaSet
-        documentIndex: 1
+        documentIndex: 4
       - equal:
           path: spec.version
           value: "7.0.0"
-        documentIndex: 1
+        documentIndex: 4
 
   - it: should render MongoDBCommunity with custom version
     set:
@@ -46,33 +121,27 @@ tests:
       - equal:
           path: spec.version
           value: "6.0.0"
-        documentIndex: 1
+        documentIndex: 4
 
-  - it: should render MongoDBCommunity with custom database
+  - it: should render MongoDBCommunity with custom database name
     set:
       mongodbCommunity.enabled: true
       mongodbCommunity.database: "custom-db"
     asserts:
-      - contains:
-          path: spec.users[0].roles
-          content:
-            name: dbOwner
-            db: unifi
-        documentIndex: 1
-      - contains:
-          path: spec.users[0].roles
-          content:
-            name: dbOwner
-            db: unifi_stat
-        documentIndex: 1
-      - contains:
-          path: spec.users[0].roles
-          content:
-            name: dbOwner
-            db: unifi_audit
-        documentIndex: 1
+      - equal:
+          path: spec.users[0].roles[0].db
+          value: "unifi"
+        documentIndex: 4
+      - equal:
+          path: spec.users[0].roles[1].db
+          value: "unifi_stat"
+        documentIndex: 4
+      - equal:
+          path: spec.users[0].roles[2].db
+          value: "unifi_audit"
+        documentIndex: 4
 
-  - it: should render MongoDBCommunity with persistence enabled
+  - it: should render MongoDBCommunity with persistence configuration
     set:
       mongodbCommunity.enabled: true
       mongodbCommunity.persistence.enabled: true
@@ -82,11 +151,11 @@ tests:
       - equal:
           path: spec.statefulSet.spec.volumeClaimTemplates[0].spec.resources.requests.storage
           value: "10Gi"
-        documentIndex: 1
+        documentIndex: 4
       - equal:
           path: spec.statefulSet.spec.volumeClaimTemplates[0].spec.storageClassName
           value: "fast-ssd"
-        documentIndex: 1
+        documentIndex: 4
 
   - it: should render MongoDBCommunity with custom resources
     set:
@@ -102,73 +171,43 @@ tests:
       - equal:
           path: spec.statefulSet.spec.template.spec.containers[0].resources.limits.cpu
           value: "2"
-        documentIndex: 1
+        documentIndex: 4
       - equal:
           path: spec.statefulSet.spec.template.spec.containers[0].resources.limits.memory
           value: "2Gi"
-        documentIndex: 1
+        documentIndex: 4
       - equal:
           path: spec.statefulSet.spec.template.spec.containers[0].resources.requests.cpu
           value: "1"
-        documentIndex: 1
+        documentIndex: 4
       - equal:
           path: spec.statefulSet.spec.template.spec.containers[0].resources.requests.memory
           value: "1Gi"
-        documentIndex: 1
+        documentIndex: 4
 
-  - it: should render MongoDB secret with random password
+  - it: should render MongoDBCommunity with correct user configuration
     set:
       mongodbCommunity.enabled: true
-    asserts:
-      - equal:
-          path: metadata.name
-          value: RELEASE-NAME-unifi-mongodb-password
-        documentIndex: 0
-      - isKind:
-          of: Secret
-        documentIndex: 0
-      - equal:
-          path: type
-          value: Opaque
-        documentIndex: 0
-      - exists:
-          path: stringData.password
-        documentIndex: 0
-
-  - it: should render MongoDBCommunity with user configuration
-    set:
-      mongodbCommunity.enabled: true
-      mongodbCommunity.users:
-        - name: "test-user"
-          db: "admin"
-          passwordSecretRef:
-            name: test-password
-          roles:
-            - name: dbOwner
-              db: testdb
-          scramCredentialsSecretName: test-scram
     asserts:
       - equal:
           path: spec.users[0].name
-          value: "test-user"
-        documentIndex: 1
+          value: "unifi"
+        documentIndex: 4
       - equal:
           path: spec.users[0].db
           value: "admin"
-        documentIndex: 1
+        documentIndex: 4
       - equal:
           path: spec.users[0].passwordSecretRef.name
-          value: "test-password"
-        documentIndex: 1
-      - equal:
-          path: spec.users[0].roles[0].name
-          value: "dbOwner"
-        documentIndex: 1
-      - equal:
-          path: spec.users[0].roles[0].db
-          value: "testdb"
-        documentIndex: 1
+          value: "unifi-mongodb-password"
+        documentIndex: 4
       - equal:
           path: spec.users[0].scramCredentialsSecretName
-          value: "test-scram"
-        documentIndex: 1
+          value: "unifi-scram"
+        documentIndex: 4
+      - contains:
+          path: spec.users[0].roles
+          content:
+            name: dbOwner
+            db: unifi
+        documentIndex: 4

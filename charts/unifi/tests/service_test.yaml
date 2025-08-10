@@ -53,11 +53,11 @@ tests:
             app.kubernetes.io/name: unifi
             app.kubernetes.io/instance: RELEASE-NAME
 
-  - it: should render all required ports
+  - it: should render required ports without captive portal by default
     asserts:
       - lengthEqual:
           path: spec.ports
-          count: 7
+          count: 5
       - contains:
           path: spec.ports
           content:
@@ -79,3 +79,41 @@ tests:
             port: 3478
             protocol: UDP
             targetPort: stun
+
+  - it: should render service with captive portal ports when enabled
+    set:
+      captivePortal.enabled: true
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 7
+      - contains:
+          path: spec.ports
+          content:
+            name: captive-https
+            port: 8843
+            protocol: TCP
+            targetPort: captive-https
+      - contains:
+          path: spec.ports
+          content:
+            name: captive-http
+            port: 8880
+            protocol: TCP
+            targetPort: captive-http
+
+  - it: should not render captive portal ports when disabled
+    set:
+      captivePortal.enabled: false
+    asserts:
+      - lengthEqual:
+          path: spec.ports
+          count: 5
+      - notContains:
+          path: spec.ports
+          content:
+            name: captive-https
+      - notContains:
+          path: spec.ports
+          content:
+            name: captive-http

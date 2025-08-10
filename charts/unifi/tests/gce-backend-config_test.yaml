@@ -1,0 +1,100 @@
+suite: test gce backend config
+templates:
+  - gce-backend-config.yaml
+tests:
+  - it: should not render gce backend config by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render gce backend config when ingress is disabled
+    set:
+      ingress.enabled: false
+      ingress.className: gce
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render gce backend config when className is not gce
+    set:
+      ingress.enabled: true
+      ingress.className: nginx
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render gce backend config when ingress enabled with gce className
+    set:
+      ingress.enabled: true
+      ingress.className: gce
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: BackendConfig
+      - equal:
+          path: apiVersion
+          value: cloud.google.com/v1
+      - equal:
+          path: metadata.name
+          value: unifi-backend-config
+      - equal:
+          path: spec.healthCheck.port
+          value: 8443
+      - equal:
+          path: spec.healthCheck.type
+          value: HTTPS
+      - equal:
+          path: spec.healthCheck.requestPath
+          value: /status
+      - contains:
+          path: spec.protocols
+          content: HTTPS
+
+  - it: should render gce backend config when className contains gce
+    set:
+      ingress.enabled: true
+      ingress.className: gce-internal
+    asserts:
+      - hasDocuments:
+          count: 1
+      - equal:
+          path: metadata.name
+          value: unifi-backend-config
+
+  - it: should render gce backend config with correct labels
+    set:
+      ingress.enabled: true
+      ingress.className: gce
+    asserts:
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: unifi
+      - equal:
+          path: metadata.labels["app.kubernetes.io/instance"]
+          value: RELEASE-NAME
+      - exists:
+          path: metadata.labels["app.kubernetes.io/version"]
+      - equal:
+          path: metadata.labels["app.kubernetes.io/managed-by"]
+          value: Helm
+
+  - it: should handle case insensitive gce className
+    set:
+      ingress.enabled: true
+      ingress.className: GCE
+    asserts:
+      - hasDocuments:
+          count: 1
+
+  - it: should configure health check correctly
+    set:
+      ingress.enabled: true
+      ingress.className: gce
+    asserts:
+      - equal:
+          path: spec.healthCheck.checkIntervalSec
+          value: 10
+      - equal:
+          path: spec.securityPolicy.name
+          value: cloud-armor-policy

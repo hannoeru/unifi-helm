@@ -176,18 +176,33 @@ helm install my-unifi unifi/unifi -f values.yaml
 | `ingress.className` | Ingress class name | `""` |
 | `ingress.hosts` | Ingress hosts | See values.yaml |
 
+### Captive Portal Configuration
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `captivePortal.enabled` | Enable captive portal functionality | `false` |
+| `captivePortal.ingress.enabled` | Enable captive portal ingress | `false` |
+| `captivePortal.ingress.className` | Captive portal ingress class name | `""` |
+| `captivePortal.ingress.hosts` | Captive portal ingress hosts | See values.yaml |
+
+The captive portal functionality must be enabled with `captivePortal.enabled=true` to expose the portal ports (8843 HTTPS, 8880 HTTP). The ingress is configured separately and uses HTTP backend protocol on port 8880. This is typically used for guest network portals that need to be accessible before authentication.
+
 #### Multi-Ingress Controller Support
 
-The chart automatically configures proper HTTPS backend settings for UniFi's web interface (port 8443) based on your ingress controller:
+The chart automatically configures proper backend settings for both the main web interface and captive portal based on your ingress controller:
 
+**Main Web Interface (port 8443 - HTTPS):**
 - **NGINX Ingress Controller**: Configures backend protocol as HTTPS with SSL verification disabled
 - **Traefik**: Sets up HTTPS backend with ServersTransport for certificate handling  
 - **AWS Load Balancer Controller**: Configures ALB for HTTPS backend protocol
 - **Google Cloud Load Balancer**: Uses BackendConfig for HTTPS health checks
 
-Simply set `ingress.className` to match your ingress controller (supports partial matching, e.g., `nginx`, `nginx-internal`, `traefik-v2`, etc.).
+**Captive Portal (port 8880 - HTTP):**
+- Uses standard HTTP backend - no special annotations required for any ingress controller
 
-**Note**: If your ingress controller is not in the supported list or the className doesn't match your ingress name, you can manually configure the required annotations in `ingress.annotations` to ensure proper HTTPS backend connectivity to UniFi's port 8443.
+Simply set `ingress.className` and `captivePortal.ingress.className` to match your ingress controller (supports partial matching, e.g., `nginx`, `nginx-internal`, `traefik-v2`, etc.).
+
+**Note**: If your ingress controller is not in the supported list or the className doesn't match your ingress name, you can manually configure the required annotations in `ingress.annotations` or `captivePortal.ingress.annotations` to ensure proper backend connectivity.
 
 ### Extra Objects
 

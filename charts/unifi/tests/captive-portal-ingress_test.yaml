@@ -1,0 +1,160 @@
+suite: test captive portal ingress
+templates:
+  - captive-portal-ingress.yaml
+tests:
+  - it: should not render captive portal ingress by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render captive portal ingress when only captivePortal.enabled is true
+    set:
+      captivePortal.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should not render captive portal ingress when only captivePortal.ingress.enabled is true
+    set:
+      captivePortal.ingress.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render captive portal ingress when both captivePortal.enabled and captivePortal.ingress.enabled are true
+    set:
+      captivePortal.enabled: true
+      captivePortal.ingress.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: Ingress
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-unifi-captive-portal
+      - equal:
+          path: metadata.labels["app.kubernetes.io/component"]
+          value: captive-portal
+
+  - it: should render captive portal ingress with custom className
+    set:
+      captivePortal.enabled: true
+      captivePortal.ingress.enabled: true
+      captivePortal.ingress.className: nginx
+    asserts:
+      - equal:
+          path: spec.ingressClassName
+          value: nginx
+
+  - it: should render captive portal ingress with custom host
+    set:
+      captivePortal.enabled: true
+      captivePortal.ingress.enabled: true
+      captivePortal.ingress.hosts:
+        - host: portal.example.com
+          paths:
+            - path: /
+              pathType: Prefix
+    asserts:
+      - equal:
+          path: spec.rules[0].host
+          value: portal.example.com
+      - equal:
+          path: spec.rules[0].http.paths[0].path
+          value: /
+      - equal:
+          path: spec.rules[0].http.paths[0].pathType
+          value: Prefix
+
+  - it: should render captive portal ingress with TLS
+    set:
+      captivePortal.enabled: true
+      captivePortal.ingress.enabled: true
+      captivePortal.ingress.tls:
+        - secretName: captive-portal-tls
+          hosts:
+            - portal.example.com
+    asserts:
+      - equal:
+          path: spec.tls[0].secretName
+          value: captive-portal-tls
+      - contains:
+          path: spec.tls[0].hosts
+          content: portal.example.com
+
+  - it: should render captive portal ingress with custom annotations
+    set:
+      captivePortal.enabled: true
+      captivePortal.ingress.enabled: true
+      captivePortal.ingress.annotations:
+        nginx.ingress.kubernetes.io/rewrite-target: /
+        custom.annotation/test: value
+    asserts:
+      - equal:
+          path: metadata.annotations["nginx.ingress.kubernetes.io/rewrite-target"]
+          value: /
+      - equal:
+          path: metadata.annotations["custom.annotation/test"]
+          value: value
+
+  - it: should use HTTP port 8880 as backend
+    set:
+      captivePortal.enabled: true
+      captivePortal.ingress.enabled: true
+      service.httpPortal: 8880
+    asserts:
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 8880
+
+  - it: should use custom HTTP port as backend
+    set:
+      captivePortal.enabled: true
+      captivePortal.ingress.enabled: true
+      service.httpPortal: 9880
+    asserts:
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.port.number
+          value: 9880
+
+  - it: should set correct service name as backend
+    set:
+      captivePortal.enabled: true
+      captivePortal.ingress.enabled: true
+    asserts:
+      - equal:
+          path: spec.rules[0].http.paths[0].backend.service.name
+          value: RELEASE-NAME-unifi
+
+  - it: should handle multiple hosts and paths
+    set:
+      captivePortal.enabled: true
+      captivePortal.ingress.enabled: true
+      captivePortal.ingress.hosts:
+        - host: portal1.example.com
+          paths:
+            - path: /
+              pathType: Prefix
+            - path: /admin
+              pathType: Exact
+        - host: portal2.example.com
+          paths:
+            - path: /guest
+              pathType: Prefix
+    asserts:
+      - lengthEqual:
+          path: spec.rules
+          count: 2
+      - equal:
+          path: spec.rules[0].host
+          value: portal1.example.com
+      - lengthEqual:
+          path: spec.rules[0].http.paths
+          count: 2
+      - equal:
+          path: spec.rules[1].host
+          value: portal2.example.com
+      - equal:
+          path: spec.rules[1].http.paths[0].path
+          value: /guest

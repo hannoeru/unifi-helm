@@ -1,0 +1,160 @@
+suite: test extra objects
+templates:
+  - extra-objects.yaml
+tests:
+  - it: should not render any extra objects by default
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render extra objects when provided as YAML
+    set:
+      extraObjects:
+        - apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: test-config
+          data:
+            key: value
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: test-config
+      - equal:
+          path: data.key
+          value: value
+
+  - it: should render multiple extra objects
+    set:
+      extraObjects:
+        - apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: test-config
+          data:
+            key: value
+        - apiVersion: v1
+          kind: Secret
+          metadata:
+            name: test-secret
+          type: Opaque
+          data:
+            password: c2VjcmV0
+    asserts:
+      - hasDocuments:
+          count: 2
+
+  - it: should template extra objects with chart values
+    set:
+      extraObjects:
+        - |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: "{{ include "unifi.fullname" . }}-extra"
+            labels:
+              {{- include "unifi.labels" . | nindent 6 }}
+          data:
+            release: "{{ .Release.Name }}"
+    asserts:
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-unifi-extra
+      - equal:
+          path: metadata.labels["app.kubernetes.io/name"]
+          value: unifi
+      - equal:
+          path: metadata.labels["app.kubernetes.io/instance"]
+          value: RELEASE-NAME
+      - equal:
+          path: data.release
+          value: RELEASE-NAME
+
+  - it: should render extra objects as string templates
+    set:
+      extraObjects:
+        - |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: {{ include "unifi.fullname" . }}-string-config
+          data:
+            value: "{{ .Values.replicaCount }}"
+    asserts:
+      - isKind:
+          of: ConfigMap
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-unifi-string-config
+      - equal:
+          path: data.value
+          value: "1"
+
+  - it: should handle complex extra objects with conditionals
+    set:
+      extraObjects:
+        - |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: conditional-config
+            {{- if .Values.serviceAccount.create }}
+            annotations:
+              service-account: "{{ include "unifi.serviceAccountName" . }}"
+            {{- end }}
+          data:
+            enabled: "{{ .Values.serviceAccount.create }}"
+      serviceAccount.create: true
+    asserts:
+      - equal:
+          path: metadata.annotations["service-account"]
+          value: RELEASE-NAME-unifi
+      - equal:
+          path: data.enabled
+          value: "true"
+
+  - it: should render extra objects with custom values
+    set:
+      customValue: custom-test-value
+      extraObjects:
+        - apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: custom-value-config
+          data:
+            custom: "{{ .Values.customValue }}"
+    asserts:
+      - equal:
+          path: data.custom
+          value: custom-test-value
+
+  - it: should handle NetworkPolicy as extra object
+    set:
+      extraObjects:
+        - |
+          apiVersion: networking.k8s.io/v1
+          kind: NetworkPolicy
+          metadata:
+            name: "{{ include "unifi.fullname" . }}-custom-netpol"
+          spec:
+            podSelector:
+              matchLabels:
+                {{- include "unifi.selectorLabels" . | nindent 8 }}
+            policyTypes:
+              - Ingress
+    asserts:
+      - isKind:
+          of: NetworkPolicy
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-unifi-custom-netpol
+      - equal:
+          path: spec.podSelector.matchLabels["app.kubernetes.io/name"]
+          value: unifi
+      - equal:
+          path: spec.podSelector.matchLabels["app.kubernetes.io/instance"]
+          value: RELEASE-NAME

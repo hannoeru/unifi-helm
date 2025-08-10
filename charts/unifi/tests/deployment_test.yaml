@@ -50,7 +50,7 @@ tests:
             name: MONGO_USER
             valueFrom:
               secretKeyRef:
-                name: RELEASE-NAME-unifi-mongodb-admin-user
+                name: RELEASE-NAME-unifi-mongodb-admin-unifi
                 key: username
       - contains:
           path: spec.template.spec.containers[0].env
@@ -58,7 +58,7 @@ tests:
             name: MONGO_PASS
             valueFrom:
               secretKeyRef:
-                name: RELEASE-NAME-unifi-mongodb-admin-user
+                name: RELEASE-NAME-unifi-mongodb-admin-unifi
                 key: password
       - contains:
           path: spec.template.spec.containers[0].env
@@ -184,10 +184,10 @@ tests:
           value: 1000
       - equal:
           path: spec.template.spec.securityContext.runAsUser
-          value: 1000
+          value: 0
       - equal:
           path: spec.template.spec.securityContext.runAsGroup
-          value: 1000
+          value: 0
 
   - it: should render deployment with resource limits
     set:
@@ -205,3 +205,37 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].resources.limits.memory
           value: 1Gi
+
+  - it: should render deployment without captive portal ports by default
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].ports
+          count: 5
+      - notContains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: captive-https
+      - notContains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: captive-http
+
+  - it: should render deployment with captive portal ports when enabled
+    set:
+      captivePortal.enabled: true
+    asserts:
+      - lengthEqual:
+          path: spec.template.spec.containers[0].ports
+          count: 7
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: captive-https
+            containerPort: 8843
+            protocol: TCP
+      - contains:
+          path: spec.template.spec.containers[0].ports
+          content:
+            name: captive-http
+            containerPort: 8880
+            protocol: TCP

@@ -1,0 +1,60 @@
+{{- if and .Values.captivePortal.enabled .Values.captivePortal.ingress.enabled -}}
+{{- $fullName := include "unifi.fullname" . -}}
+{{- $httpPortalPort := .Values.service.httpPortal -}}
+{{- if and .Values.captivePortal.ingress.className (not (hasKey .Values.captivePortal.ingress.annotations "kubernetes.io/ingress.class")) }}
+  {{- $_ := set .Values.captivePortal.ingress.annotations "kubernetes.io/ingress.class" .Values.captivePortal.ingress.className}}
+{{- end }}
+{{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1
+{{- else if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1beta1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ $fullName }}-captive-portal
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+    app.kubernetes.io/component: captive-portal
+  {{- with .Values.captivePortal.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if and .Values.captivePortal.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
+  ingressClassName: {{ .Values.captivePortal.ingress.className }}
+  {{- end }}
+  {{- if .Values.captivePortal.ingress.tls }}
+  tls:
+    {{- range .Values.captivePortal.ingress.tls }}
+    - hosts:
+        {{- range .hosts }}
+        - {{ . | quote }}
+        {{- end }}
+      secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
+  rules:
+    {{- range .Values.captivePortal.ingress.hosts }}
+    - host: {{ .host | quote }}
+      http:
+        paths:
+          {{- range .paths }}
+          - path: {{ .path }}
+            {{- if and .pathType (semverCompare ">=1.18-0" $.Capabilities.KubeVersion.GitVersion) }}
+            pathType: {{ .pathType }}
+            {{- end }}
+            backend:
+              {{- if semverCompare ">=1.19-0" $.Capabilities.KubeVersion.GitVersion }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $httpPortalPort }}
+              {{- else }}
+              serviceName: {{ $fullName }}
+              servicePort: {{ $httpPortalPort }}
+              {{- end }}
+          {{- end }}
+    {{- end }}
+{{- end }}

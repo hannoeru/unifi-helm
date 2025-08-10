@@ -19,14 +19,16 @@ spec:
       targetPort: stun
       protocol: UDP
       name: stun
+    {{- if .Values.captivePortal.enabled }}
     - port: {{ .Values.service.httpsPortal }}
-      targetPort: https-portal
+      targetPort: captive-https
       protocol: TCP
-      name: https-portal
+      name: captive-https
     - port: {{ .Values.service.httpPortal }}
-      targetPort: http-portal
+      targetPort: captive-http
       protocol: TCP
-      name: http-portal
+      name: captive-http
+    {{- end }}
     - port: {{ .Values.service.speedtest }}
       targetPort: speedtest
       protocol: TCP
