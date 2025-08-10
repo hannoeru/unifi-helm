@@ -10,6 +10,49 @@ type: Opaque
 stringData:
   password: {{ randAlphaNum 16 }}
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "unifi.fullname" . }}-mongodb-database
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "unifi.fullname" . }}-mongodb-database
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+  - apiGroups:
+      - ""
+    resources:
+      - pods
+    verbs:
+      - patch
+      - delete
+      - get
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ include "unifi.fullname" . }}-mongodb-database
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "unifi.fullname" . }}-mongodb-database
+roleRef:
+  kind: Role
+  name: {{ include "unifi.fullname" . }}-mongodb-database
+  apiGroup: rbac.authorization.k8s.io
+---
 apiVersion: mongodbcommunity.mongodb.com/v1
 kind: MongoDBCommunity
 metadata:
@@ -42,6 +85,7 @@ spec:
     spec:
       template:
         spec:
+          serviceAccountName: {{ include "unifi.fullname" . }}-mongodb-database
           containers:
             - name: mongod
               resources:

@@ -66,12 +66,12 @@ spec:
             - name: MONGO_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "unifi.fullname" . }}-mongodb-admin-user
+                  name: {{ include "unifi.fullname" . }}-mongodb-admin-unifi
                   key: username
             - name: MONGO_PASS
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "unifi.fullname" . }}-mongodb-admin-user
+                  name: {{ include "unifi.fullname" . }}-mongodb-admin-unifi
                   key: password
             - name: MONGO_HOST
               value: {{ printf "%s-mongodb-svc.%s.svc.cluster.local" (include "unifi.fullname" .) .Release.Namespace | quote }}
