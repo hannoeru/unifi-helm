@@ -32,7 +32,7 @@ The UniFi chart supports two database configuration options:
 
 If you want to use the MongoDB Community Operator to manage MongoDB within your cluster, install it first:
 
-### Method 1: Using Helm (Recommended)
+### Using Helm
 
 ```bash
 # Add the MongoDB Community Operator Helm repository
@@ -40,20 +40,7 @@ helm repo add mongodb https://mongodb.github.io/helm-charts
 helm repo update
 
 # Install the MongoDB Community Operator
-helm install community-operator mongodb/community-operator --namespace mongodb-system --create-namespace
-```
-
-### Method 2: Using kubectl
-
-```bash
-# Install MongoDB Community Operator CRDs
-kubectl apply -f https://raw.githubusercontent.com/mongodb/mongodb-kubernetes-operator/master/config/crd/bases/mongodbcommunity.mongodb.com_mongodbcommunity.yaml
-
-# Install MongoDB Community Operator RBAC
-kubectl apply -k https://github.com/mongodb/mongodb-kubernetes-operator/config/rbac/
-
-# Install MongoDB Community Operator
-kubectl apply -f https://raw.githubusercontent.com/mongodb/mongodb-kubernetes-operator/master/config/manager/manager.yaml
+helm install community-operator mongodb/community-operator --set operator.watchNamespace="*" --namespace mongodb-system --create-namespace
 ```
 
 ### Verify Installation
