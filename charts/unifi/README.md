@@ -2,12 +2,12 @@
 
 ![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v9.3.43](https://img.shields.io/badge/AppVersion-v9.3.43-informational?style=flat-square)
 
-A Helm chart for deploying the UniFi Network Controller on Kubernetes with MongoDB Community Operator support.
+A Helm chart for deploying the UniFi Network Controller on Kubernetes with flexible database options including MongoDB Community Operator and external database support.
 
 ## Features
 
 - 🚀 **Easy Deployment**: One-command deployment of UniFi Network Controller
-- 🗄️ **MongoDB Support**: MongoDB Community Kubernetes Operator for data persistence
+- 🗄️ **Flexible Database Options**: MongoDB Community Operator or external database support
 - 🔒 **Security**: Runs as non-root user with proper security contexts
 - 📊 **Monitoring**: Built-in health checks and readiness probes
 - 🌐 **Ingress**: Optional ingress configuration with TLS support
@@ -19,11 +19,18 @@ A Helm chart for deploying the UniFi Network Controller on Kubernetes with Mongo
 
 - Kubernetes 1.19+
 - Helm 3.8+
-- MongoDB Community Kubernetes Operator (for MongoDB support)
+- A MongoDB database (MongoDB Community Operator or external MongoDB instance)
 
-## Installing MongoDB Community Operator
+## Database Options
 
-Before installing the UniFi chart, you need to install the MongoDB Community Kubernetes Operator:
+The UniFi chart supports two database configuration options:
+
+1. **MongoDB Community Operator**: Deploys and manages MongoDB within your cluster
+2. **External Database**: Connects to an existing MongoDB instance
+
+### Option 1: MongoDB Community Operator (Optional)
+
+If you want to use the MongoDB Community Operator to manage MongoDB within your cluster, install it first:
 
 ### Method 1: Using Helm (Recommended)
 
@@ -72,15 +79,17 @@ helm repo update
 ### Basic Installation
 
 ```bash
-# Install with default values (no database - you need to configure one)
-helm install my-unifi unifi/unifi
+# Install with external database (configure your database settings)
+helm install my-unifi unifi/unifi \
+  --set externalDatabase.enabled=true \
+  --set externalDatabase.host=your-mongodb-host
 ```
 
 ### Installation with MongoDB Community Operator
 
 ```bash
 # First install the MongoDB Community Operator (see above)
-# Then install UniFi with MongoDB Community Operator
+# Then install UniFi with MongoDB Community Operator enabled
 helm install my-unifi unifi/unifi --set mongodbCommunity.enabled=true
 ```
 
@@ -107,7 +116,7 @@ helm install my-unifi unifi/unifi -f values.yaml
 
 ### Database Configuration
 
-**Choose one of the following database options:**
+**You must configure exactly one of the following database options:**
 
 #### MongoDB Community Operator Configuration
 
