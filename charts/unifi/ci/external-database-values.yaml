@@ -1,0 +1,21 @@
+# Test values with External Database enabled
+externalDatabase:
+  enabled: true
+  host: "mongodb.example.com"
+  port: 27017
+  database: "unifi"
+  username: "unifi-user"
+  password: "test-password"
+  authSource: "admin"
+
+persistence:
+  enabled: true
+  size: 1Gi
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 100m
+    memory: 256Mi

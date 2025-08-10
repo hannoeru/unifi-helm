@@ -5,10 +5,10 @@
 replicaCount: 1
 
 image:
-  repository: ghcr.io/jacobalberty/unifi-docker
+  repository: linuxserver/unifi-network-application
   pullPolicy: IfNotPresent
   # Overrides the image tag whose default is the chart appVersion.
-  tag: "v9.3.43"
+  tag: ""
 
 imagePullSecrets: []
 nameOverride: ""
@@ -16,7 +16,7 @@ fullnameOverride: ""
 
 serviceAccount:
   # Specifies whether a service account should be created
-  create: true
+  create: false
   # Annotations to add to the service account
   annotations: {}
   # The name of the service account to use.
@@ -26,9 +26,9 @@ serviceAccount:
 podAnnotations: {}
 
 podSecurityContext:
-  fsGroup: 999
-  runAsUser: 999
-  runAsGroup: 999
+  fsGroup: 1000
+  runAsUser: 1000
+  runAsGroup: 1000
 
 securityContext: {}
 
@@ -85,57 +85,140 @@ tolerations: []
 
 affinity: {}
 
+# ServiceMonitor configuration for Prometheus monitoring
+serviceMonitor:
+  enabled: false
+  # Prometheus instance selector
+  # If empty, the ServiceMonitor will be selected by any Prometheus instance
+  # If specified, only Prometheus instances with matching labels will scrape this ServiceMonitor
+  selector: {}
+  # Additional labels for the ServiceMonitor
+  labels: {}
+  # Additional annotations for the ServiceMonitor
+  annotations: {}
+  # Scrape interval
+  interval: "30s"
+  # Scrape timeout
+  scrapeTimeout: "10s"
+  # Metrics path
+  path: "/status"
+  # Target port - should match the service port name or number
+  targetPort: "web-interface"
+  # HTTP scheme (http or https)
+  scheme: "https"
+  # TLS configuration for scraping HTTPS endpoints
+  tlsConfig:
+    # Skip TLS certificate verification
+    insecureSkipVerify: true
+  # Additional scrape parameters
+  params: {}
+  # Relabeling rules
+  relabelings: []
+  # Metric relabeling rules
+  metricRelabelings: []
+
+# Network Policy configuration
+networkPolicy:
+  enabled: false
+  # Ingress rules for the UniFi controller
+  ingress:
+    # Allow ingress from all pods in the same namespace
+    - from:
+        - podSelector: {}
+    # Allow ingress from specific IP ranges (example)
+    # - from:
+    #     - ipBlock:
+    #         cidr: 10.0.0.0/8
+  # Egress rules for the UniFi controller
+  egress:
+    # Allow all egress traffic by default
+    - {}
+
 # PodDisruptionBudget configuration
 podDisruptionBudget:
   enabled: false
   # minAvailable: 1
   # maxUnavailable: 1
 
-# UniFi specific configuration
+# UniFi specific configuration (LinuxServer image)
 unifi:
-  # UniFi Controller environment variables
-  env:
-    TZ: "UTC"
-    RUNAS_UID0: "false"
-    UNIFI_UID: "999"
-    UNIFI_GID: "999"
-    
+  # LinuxServer container configuration
+  timezone: "Etc/UTC"
+  puid: 1000
+  pgid: 1000
+
+  # Network port configuration
+  ports:
+    https: 8443
+    http: 8080
+    stun: 3478
+    discovery: 10001
   # Additional environment variables
   extraEnv: []
   # - name: CUSTOM_VAR
   #   value: "custom_value"
 
-# MongoDB subchart configuration
-mongodb:
-  enabled: true
-  auth:
-    enabled: false
-    # rootUser: root
-    # rootPassword: ""
-    # username: unifi
-    # password: ""
-    # database: unifi
-  architecture: standalone
+# Database configuration
+# Choose one of the following options:
+# 1. MongoDB Community Operator (managed MongoDB instance)
+# 2. External Database (connect to existing MongoDB instance)
+
+# MongoDB Community Kubernetes Operator configuration
+mongodbCommunity:
+  enabled: false
+  database: "unifi"
+  version: "7.0.0"
+  # MongoDB users configuration - admin user will be created automatically
+  users:
+    - name: "unifi"
+      db: "admin"
+      passwordSecretRef:
+        name: unifi-mongodb-password
+      roles:
+        - name: dbOwner
+          db: unifi
+        - name: dbOwner
+          db: unifi_stat
+        - name: dbOwner
+          db: unifi_audit
+      scramCredentialsSecretName: unifi-scram
+  # Storage configuration
   persistence:
     enabled: true
     size: 8Gi
-  service:
-    ports:
-      mongodb: 27017
-  # MongoDB configuration for UniFi
-  initdbScripts:
-    init-unifi.js: |
-      db = db.getSiblingDB('unifi');
-      db.createUser({
-        user: 'unifi',
-        pwd: 'unifi',
-        roles: [{ role: 'dbOwner', db: 'unifi' }]
-      });
-  # Resource limits for MongoDB
+    storageClass: ""
+  # Resource configuration
   resources:
     limits:
-      cpu: 1000m
-      memory: 1Gi
+      memory: "1Gi"
     requests:
-      cpu: 500m
-      memory: 512Mi
+      cpu: "500m"
+      memory: "512Mi"
+
+# External Database configuration
+# Use this when connecting to an existing MongoDB instance
+externalDatabase:
+  enabled: false
+  # MongoDB connection details
+  host: "mongodb.example.com"
+  port: 27017
+  database: "unifi"
+  # Authentication
+  username: "unifi"
+  # Password can be provided via existing secret or plain text
+  password: ""
+  # Use existing secret for password (recommended)
+  existingSecret: ""
+  passwordKey: "password"
+  # Authentication source database
+  authSource: "admin"
+  # Connection options
+  options: ""  # Additional MongoDB connection string options (e.g., "ssl=true&replicaSet=rs0")
+  # TLS/SSL configuration
+  tls:
+    enabled: false
+    # Use existing secret for TLS certificates
+    existingSecret: ""
+    caKey: "ca.crt"
+    certKey: "tls.crt"
+    keyKey: "tls.key"

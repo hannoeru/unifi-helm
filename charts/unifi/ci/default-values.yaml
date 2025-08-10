@@ -1,4 +1,5 @@
 # Default test values - basic installation
+
 persistence:
   enabled: true
   size: 1Gi

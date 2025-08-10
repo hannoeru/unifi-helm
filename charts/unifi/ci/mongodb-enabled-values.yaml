@@ -1,8 +1,8 @@
-# Test values with MongoDB enabled
-mongodb:
+# Test values with MongoDB Community Operator enabled
+mongodbCommunity:
   enabled: true
-  auth:
-    enabled: false
+  database: "unifi"
+  version: "7.0.0"
   persistence:
     enabled: true
     size: 1Gi

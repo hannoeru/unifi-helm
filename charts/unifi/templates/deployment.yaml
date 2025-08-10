@@ -35,10 +35,10 @@ spec:
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           ports:
             - name: device-control
-              containerPort: 8080
+              containerPort: {{ .Values.unifi.ports.http }}
               protocol: TCP
             - name: web-interface
-              containerPort: 8443
+              containerPort: {{ .Values.unifi.ports.https }}
               protocol: TCP
             - name: stun
               containerPort: 3478
@@ -57,20 +57,67 @@ spec:
               protocol: UDP
           env:
             - name: TZ
-              value: {{ .Values.unifi.env.TZ | quote }}
-            - name: RUNAS_UID0
-              value: {{ .Values.unifi.env.RUNAS_UID0 | quote }}
-            - name: UNIFI_UID
-              value: {{ .Values.unifi.env.UNIFI_UID | quote }}
-            - name: UNIFI_GID
-              value: {{ .Values.unifi.env.UNIFI_GID | quote }}
-            {{- if .Values.mongodb.enabled }}
-            - name: DB_URI
-              value: "mongodb://{{ include "unifi.fullname" . }}-mongodb:27017/unifi"
-            - name: STATDB_URI
-              value: "mongodb://{{ include "unifi.fullname" . }}-mongodb:27017/unifi_stat"
-            - name: DB_NAME
-              value: "unifi"
+              value: {{ .Values.unifi.timezone | quote }}
+            - name: PUID
+              value: {{ .Values.unifi.puid | quote }}
+            - name: PGID
+              value: {{ .Values.unifi.pgid | quote }}
+            {{- if .Values.mongodbCommunity.enabled }}
+            - name: MONGO_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "unifi.fullname" . }}-mongodb-admin-user
+                  key: username
+            - name: MONGO_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "unifi.fullname" . }}-mongodb-admin-user
+                  key: password
+            - name: MONGO_HOST
+              value: {{ printf "%s-mongodb-svc.%s.svc.cluster.local" (include "unifi.fullname" .) .Release.Namespace | quote }}
+            - name: MONGO_PORT
+              value: "27017"
+            - name: MONGO_DBNAME
+              value: {{ .Values.mongodbCommunity.database | quote }}
+            - name: MONGO_AUTHSOURCE
+              value: "admin"
+            {{- else if .Values.externalDatabase.enabled }}
+            - name: MONGO_HOST
+              value: {{ .Values.externalDatabase.host | quote }}
+            - name: MONGO_PORT
+              value: {{ .Values.externalDatabase.port | quote }}
+            - name: MONGO_DBNAME
+              value: {{ .Values.externalDatabase.database | quote }}
+            - name: MONGO_AUTHSOURCE
+              value: {{ .Values.externalDatabase.authSource | quote }}
+            - name: MONGO_USER
+              value: {{ .Values.externalDatabase.username | quote }}
+            {{- if .Values.externalDatabase.existingSecret }}
+            - name: MONGO_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.externalDatabase.existingSecret }}
+                  key: {{ .Values.externalDatabase.passwordKey }}
+            {{- else if .Values.externalDatabase.password }}
+            - name: MONGO_PASS
+              value: {{ .Values.externalDatabase.password | quote }}
+            {{- end }}
+            {{- if .Values.externalDatabase.options }}
+            - name: MONGO_OPTIONS
+              value: {{ .Values.externalDatabase.options | quote }}
+            {{- end }}
+            {{- if .Values.externalDatabase.tls.enabled }}
+            - name: MONGO_TLS
+              value: "true"
+            {{- if .Values.externalDatabase.tls.existingSecret }}
+            - name: MONGO_TLS_CA_FILE
+              value: "/etc/ssl/mongodb/{{ .Values.externalDatabase.tls.caKey }}"
+            - name: MONGO_TLS_CERT_FILE
+              value: "/etc/ssl/mongodb/{{ .Values.externalDatabase.tls.certKey }}"
+            - name: MONGO_TLS_KEY_FILE
+              value: "/etc/ssl/mongodb/{{ .Values.externalDatabase.tls.keyKey }}"
+            {{- end }}
+            {{- end }}
             {{- end }}
             {{- with .Values.unifi.extraEnv }}
             {{- toYaml . | nindent 12 }}
@@ -95,7 +142,12 @@ spec:
             failureThreshold: 3
           volumeMounts:
             - name: unifi-data
-              mountPath: /unifi
+              mountPath: /config
+            {{- if and .Values.externalDatabase.enabled .Values.externalDatabase.tls.enabled .Values.externalDatabase.tls.existingSecret }}
+            - name: mongodb-tls
+              mountPath: /etc/ssl/mongodb
+              readOnly: true
+            {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
       volumes:
@@ -106,6 +158,12 @@ spec:
           {{- else }}
           emptyDir: {}
           {{- end }}
+        {{- if and .Values.externalDatabase.enabled .Values.externalDatabase.tls.enabled .Values.externalDatabase.tls.existingSecret }}
+        - name: mongodb-tls
+          secret:
+            secretName: {{ .Values.externalDatabase.tls.existingSecret }}
+            defaultMode: 0400
+        {{- end }}
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}

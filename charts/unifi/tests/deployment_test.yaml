@@ -12,9 +12,9 @@ tests:
       - equal:
           path: spec.replicas
           value: 1
-      - equal:
+      - matchRegex:
           path: spec.template.spec.containers[0].image
-          value: "ghcr.io/jacobalberty/unifi-docker:v9.3.43"
+          pattern: "linuxserver/unifi-network-application:.*"
       - equal:
           path: spec.template.spec.containers[0].ports[0].containerPort
           value: 8080
@@ -39,20 +39,131 @@ tests:
           path: spec.replicas
           value: 3
 
-  - it: should render deployment with MongoDB enabled
+  - it: should render deployment with MongoDB Community Operator enabled
     set:
-      mongodb.enabled: true
+      mongodbCommunity.enabled: true
+      mongodbCommunity.database: unifi
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: DB_URI
-            value: "mongodb://RELEASE-NAME-unifi-mongodb:27017/unifi"
+            name: MONGO_USER
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-unifi-mongodb-admin-user
+                key: username
       - contains:
           path: spec.template.spec.containers[0].env
           content:
-            name: STATDB_URI
-            value: "mongodb://RELEASE-NAME-unifi-mongodb:27017/unifi_stat"
+            name: MONGO_PASS
+            valueFrom:
+              secretKeyRef:
+                name: RELEASE-NAME-unifi-mongodb-admin-user
+                key: password
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_HOST
+            value: "RELEASE-NAME-unifi-mongodb-svc.NAMESPACE.svc.cluster.local"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_PORT
+            value: "27017"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_DBNAME
+            value: "unifi"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_AUTHSOURCE
+            value: "admin"
+
+  - it: should render deployment with external database enabled
+    set:
+      externalDatabase.enabled: true
+      externalDatabase.host: "mongodb.example.com"
+      externalDatabase.port: 27017
+      externalDatabase.database: "unifi"
+      externalDatabase.username: "unifi-user"
+      externalDatabase.password: "secret-password"
+      externalDatabase.authSource: "admin"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_HOST
+            value: "mongodb.example.com"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_PORT
+            value: "27017"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_DBNAME
+            value: "unifi"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_USER
+            value: "unifi-user"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_PASS
+            value: "secret-password"
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_AUTHSOURCE
+            value: "admin"
+
+  - it: should render deployment with external database using existing secret
+    set:
+      externalDatabase.enabled: true
+      externalDatabase.host: "mongodb.example.com"
+      externalDatabase.username: "unifi-user"
+      externalDatabase.existingSecret: "mongodb-secret"
+      externalDatabase.passwordKey: "password"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_PASS
+            valueFrom:
+              secretKeyRef:
+                name: "mongodb-secret"
+                key: "password"
+
+  - it: should render deployment with external database TLS enabled
+    set:
+      externalDatabase.enabled: true
+      externalDatabase.host: "mongodb.example.com"
+      externalDatabase.tls.enabled: true
+      externalDatabase.tls.existingSecret: "mongodb-tls"
+    asserts:
+      - contains:
+          path: spec.template.spec.containers[0].env
+          content:
+            name: MONGO_TLS
+            value: "true"
+      - contains:
+          path: spec.template.spec.containers[0].volumeMounts
+          content:
+            name: mongodb-tls
+            mountPath: /etc/ssl/mongodb
+            readOnly: true
+      - contains:
+          path: spec.template.spec.volumes
+          content:
+            name: mongodb-tls
+            secret:
+              secretName: "mongodb-tls"
+              defaultMode: 0400
 
   - it: should render deployment with custom environment variables
     set:
@@ -70,13 +181,13 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.securityContext.fsGroup
-          value: 999
+          value: 1000
       - equal:
           path: spec.template.spec.securityContext.runAsUser
-          value: 999
+          value: 1000
       - equal:
           path: spec.template.spec.securityContext.runAsGroup
-          value: 999
+          value: 1000
 
   - it: should render deployment with resource limits
     set:

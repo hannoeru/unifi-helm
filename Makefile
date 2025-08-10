@@ -19,6 +19,8 @@ install-tools: ## Install helm plugins and tools
 	@helm plugin list | grep -q unittest || helm plugin install https://github.com/helm-unittest/helm-unittest.git
 	@echo "Installing chart-testing..."
 	@which ct > /dev/null || (echo "Please install chart-testing: https://github.com/helm/chart-testing" && exit 1)
+	@echo "Installing yamllint..."
+	@which yamllint > /dev/null || brew install yamllint
 	@echo "Tools installed successfully!"
 
 # Add helm repositories

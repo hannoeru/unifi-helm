@@ -1,0 +1,62 @@
+{{- if .Values.mongodbCommunity.enabled }}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "unifi.fullname" . }}-mongodb-password
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+type: Opaque
+stringData:
+  password: {{ randAlphaNum 16 }}
+---
+apiVersion: mongodbcommunity.mongodb.com/v1
+kind: MongoDBCommunity
+metadata:
+  name: {{ include "unifi.fullname" . }}-mongodb
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+spec:
+  members: 1
+  type: ReplicaSet
+  version: {{ .Values.mongodbCommunity.version | quote }}
+  security:
+    authentication:
+      modes: ["SCRAM"]
+  users:
+    {{- range .Values.mongodbCommunity.users }}
+    - name: {{ .name }}
+      db: {{ .db }}
+      passwordSecretRef:
+        name: {{ .passwordSecretRef.name }}
+      roles:
+        {{- range .roles }}
+        - name: {{ .name }}
+          db: {{ .db }}
+        {{- end }}
+      scramCredentialsSecretName: {{ .scramCredentialsSecretName }}
+    {{- end }}
+  additionalMongodConfig:
+    storage.wiredTiger.engineConfig.journalCompressor: zlib
+  statefulSet:
+    spec:
+      template:
+        spec:
+          containers:
+            - name: mongod
+              resources:
+                {{- toYaml .Values.mongodbCommunity.resources | nindent 16 }}
+      {{- if .Values.mongodbCommunity.persistence.enabled }}
+      volumeClaimTemplates:
+        - metadata:
+            name: data-volume
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            {{- if .Values.mongodbCommunity.persistence.storageClass }}
+            storageClassName: {{ .Values.mongodbCommunity.persistence.storageClass }}
+            {{- end }}
+            resources:
+              requests:
+                storage: {{ .Values.mongodbCommunity.persistence.size }}
+      {{- end }}
+{{- end }}

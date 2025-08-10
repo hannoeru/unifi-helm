@@ -1,0 +1,164 @@
+suite: test servicemonitor
+templates:
+  - servicemonitor.yaml
+tests:
+  - it: should not render ServiceMonitor when disabled
+    set:
+      serviceMonitor.enabled: false
+    asserts:
+      - hasDocuments:
+          count: 0
+
+  - it: should render ServiceMonitor when enabled
+    set:
+      serviceMonitor.enabled: true
+    asserts:
+      - hasDocuments:
+          count: 1
+      - isKind:
+          of: ServiceMonitor
+      - equal:
+          path: metadata.name
+          value: RELEASE-NAME-unifi
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/name"]
+          value: unifi
+      - equal:
+          path: spec.selector.matchLabels["app.kubernetes.io/instance"]
+          value: RELEASE-NAME
+
+  - it: should render ServiceMonitor with default endpoint configuration
+    set:
+      serviceMonitor.enabled: true
+    asserts:
+      - equal:
+          path: spec.endpoints[0].port
+          value: "web-interface"
+      - equal:
+          path: spec.endpoints[0].interval
+          value: "30s"
+      - equal:
+          path: spec.endpoints[0].scrapeTimeout
+          value: "10s"
+      - equal:
+          path: spec.endpoints[0].path
+          value: "/status"
+      - equal:
+          path: spec.endpoints[0].scheme
+          value: "https"
+
+  - it: should render ServiceMonitor with custom configuration
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.interval: "60s"
+      serviceMonitor.scrapeTimeout: "30s"
+      serviceMonitor.path: "/metrics"
+      serviceMonitor.scheme: "http"
+      serviceMonitor.targetPort: "http"
+    asserts:
+      - equal:
+          path: spec.endpoints[0].interval
+          value: "60s"
+      - equal:
+          path: spec.endpoints[0].scrapeTimeout
+          value: "30s"
+      - equal:
+          path: spec.endpoints[0].path
+          value: "/metrics"
+      - equal:
+          path: spec.endpoints[0].scheme
+          value: "http"
+      - equal:
+          path: spec.endpoints[0].port
+          value: "http"
+
+  - it: should render ServiceMonitor with custom labels and annotations
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.labels:
+        monitoring: prometheus
+        team: platform
+      serviceMonitor.annotations:
+        description: "UniFi Controller monitoring"
+    asserts:
+      - equal:
+          path: metadata.labels.monitoring
+          value: prometheus
+      - equal:
+          path: metadata.labels.team
+          value: platform
+      - equal:
+          path: metadata.annotations.description
+          value: "UniFi Controller monitoring"
+
+  - it: should render ServiceMonitor with custom selector
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.selector:
+        matchLabels:
+          app: custom-unifi
+    asserts:
+      - equal:
+          path: spec.selector.matchLabels.app
+          value: custom-unifi
+
+  - it: should render ServiceMonitor with TLS config
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.tlsConfig:
+        insecureSkipVerify: false
+        ca:
+          secret:
+            name: ca-secret
+            key: ca.crt
+    asserts:
+      - equal:
+          path: spec.endpoints[0].tlsConfig.insecureSkipVerify
+          value: false
+      - equal:
+          path: spec.endpoints[0].tlsConfig.ca.secret.name
+          value: ca-secret
+      - equal:
+          path: spec.endpoints[0].tlsConfig.ca.secret.key
+          value: ca.crt
+
+  - it: should render ServiceMonitor with relabeling rules
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.relabelings:
+        - sourceLabels: [__meta_kubernetes_pod_name]
+          targetLabel: pod_name
+      serviceMonitor.metricRelabelings:
+        - sourceLabels: [__name__]
+          regex: "unifi_.*"
+          action: keep
+    asserts:
+      - equal:
+          path: spec.endpoints[0].relabelings[0].sourceLabels[0]
+          value: __meta_kubernetes_pod_name
+      - equal:
+          path: spec.endpoints[0].relabelings[0].targetLabel
+          value: pod_name
+      - equal:
+          path: spec.endpoints[0].metricRelabelings[0].sourceLabels[0]
+          value: __name__
+      - equal:
+          path: spec.endpoints[0].metricRelabelings[0].regex
+          value: "unifi_.*"
+      - equal:
+          path: spec.endpoints[0].metricRelabelings[0].action
+          value: keep
+
+  - it: should render ServiceMonitor with custom params
+    set:
+      serviceMonitor.enabled: true
+      serviceMonitor.params:
+        format: ["prometheus"]
+        module: ["http_2xx"]
+    asserts:
+      - equal:
+          path: spec.endpoints[0].params.format[0]
+          value: prometheus
+      - equal:
+          path: spec.endpoints[0].params.module[0]
+          value: http_2xx
