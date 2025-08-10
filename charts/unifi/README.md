@@ -59,7 +59,7 @@ kubectl get pods -n mongodb-system
 ### Add Helm Repository
 
 ```bash
-helm repo add unifi https://helm.hannoeru.me/
+helm repo add unifi https://unifi-helm.hannoeru.me/
 helm repo update
 ```
 
