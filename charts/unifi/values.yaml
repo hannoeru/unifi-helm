@@ -169,6 +169,27 @@ unifi:
   # - name: CUSTOM_VAR
   #   value: "custom_value"
 
+# Extra objects to deploy (can include any Kubernetes resources)
+# Supports Helm templating and can access all chart values
+extraObjects: []
+# Examples:
+# - apiVersion: v1
+#   kind: ConfigMap
+#   metadata:
+#     name: "{{ include "unifi.fullname" . }}-extra-config"
+#     labels:
+#       {{- include "unifi.labels" . | nindent 6 }}
+#   data:
+#     config.yaml: |
+#       key: value
+# - apiVersion: v1
+#   kind: Secret
+#   metadata:
+#     name: "{{ include "unifi.fullname" . }}-extra-secret"
+#   type: Opaque
+#   data:
+#     password: "{{ .Values.customPassword | b64enc }}"
+
 # Database configuration
 # Choose one of the following options:
 # 1. MongoDB Community Operator (managed MongoDB instance)

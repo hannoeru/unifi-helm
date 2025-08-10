@@ -189,6 +189,60 @@ Simply set `ingress.className` to match your ingress controller (supports partia
 
 **Note**: If your ingress controller is not in the supported list or the className doesn't match your ingress name, you can manually configure the required annotations in `ingress.annotations` to ensure proper HTTPS backend connectivity to UniFi's port 8443.
 
+### Extra Objects
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `extraObjects` | Additional Kubernetes resources to deploy | `[]` |
+
+The `extraObjects` configuration allows you to deploy additional Kubernetes resources alongside the UniFi chart. It supports full Helm templating and can access all chart values and functions.
+
+#### Examples
+
+**ConfigMap and Secret:**
+```yaml
+extraObjects:
+  - apiVersion: v1
+    kind: ConfigMap
+    metadata:
+      name: "{{ include \"unifi.fullname\" . }}-extra-config"
+      labels:
+        {{- include "unifi.labels" . | nindent 8 }}
+    data:
+      config.yaml: |
+        custom_setting: value
+        
+  - apiVersion: v1
+    kind: Secret
+    metadata:
+      name: "{{ include \"unifi.fullname\" . }}-custom-secret"
+    type: Opaque
+    stringData:
+      password: "{{ .Values.customPassword }}"
+```
+
+**Custom NetworkPolicy:**
+```yaml
+extraObjects:
+  - apiVersion: networking.k8s.io/v1
+    kind: NetworkPolicy
+    metadata:
+      name: "{{ include \"unifi.fullname\" . }}-custom-netpol"
+      labels:
+        {{- include "unifi.labels" . | nindent 8 }}
+    spec:
+      podSelector:
+        matchLabels:
+          {{- include "unifi.selectorLabels" . | nindent 10 }}
+      policyTypes:
+      - Ingress
+      ingress:
+      - from:
+        - namespaceSelector:
+            matchLabels:
+              name: monitoring
+```
+
 ### ServiceMonitor Configuration (Prometheus)
 
 | Parameter | Description | Default |
