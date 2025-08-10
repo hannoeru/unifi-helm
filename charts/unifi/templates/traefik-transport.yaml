@@ -1,0 +1,11 @@
+{{- if and .Values.ingress.enabled (contains "traefik" (.Values.ingress.className | lower)) }}
+apiVersion: traefik.containo.us/v1alpha1
+kind: ServersTransport
+metadata:
+  name: unifi-transport
+  labels:
+    {{- include "unifi.labels" . | nindent 4 }}
+spec:
+  serverName: {{ include "unifi.fullname" . }}
+  insecureSkipVerify: true
+{{- end }}

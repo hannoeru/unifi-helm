@@ -176,6 +176,19 @@ helm install my-unifi unifi/unifi -f values.yaml
 | `ingress.className` | Ingress class name | `""` |
 | `ingress.hosts` | Ingress hosts | See values.yaml |
 
+#### Multi-Ingress Controller Support
+
+The chart automatically configures proper HTTPS backend settings for UniFi's web interface (port 8443) based on your ingress controller:
+
+- **NGINX Ingress Controller**: Configures backend protocol as HTTPS with SSL verification disabled
+- **Traefik**: Sets up HTTPS backend with ServersTransport for certificate handling  
+- **AWS Load Balancer Controller**: Configures ALB for HTTPS backend protocol
+- **Google Cloud Load Balancer**: Uses BackendConfig for HTTPS health checks
+
+Simply set `ingress.className` to match your ingress controller (supports partial matching, e.g., `nginx`, `nginx-internal`, `traefik-v2`, etc.).
+
+**Note**: If your ingress controller is not in the supported list or the className doesn't match your ingress name, you can manually configure the required annotations in `ingress.annotations` to ensure proper HTTPS backend connectivity to UniFi's port 8443.
+
 ### ServiceMonitor Configuration (Prometheus)
 
 | Parameter | Description | Default |
