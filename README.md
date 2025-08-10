@@ -16,7 +16,7 @@ A collection of Helm charts for UniFi Network infrastructure components.
 Add the Helm repository:
 
 ```bash
-helm repo add unifi https://hannoeru.github.io/unifi-helm/
+helm repo add unifi https://helm.hannoeru.me/
 helm repo update
 ```
 
