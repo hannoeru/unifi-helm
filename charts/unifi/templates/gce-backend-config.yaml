@@ -15,7 +15,4 @@ spec:
     - HTTPS
   securityPolicy:
     name: "cloud-armor-policy"
-  customRequestHeaders:
-    headers:
-      - "Host:{host}"
 {{- end }}
