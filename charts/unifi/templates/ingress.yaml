@@ -24,6 +24,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-ssl-verify: "off"
     nginx.ingress.kubernetes.io/proxy-ssl-name: "{{ $fullName }}"
     nginx.ingress.kubernetes.io/upstream-vhost: "{{ $fullName }}"
+    nginx.ingress.kubernetes.io/proxy-pass-headers: "Host"
     {{- else if contains "traefik" (.Values.ingress.className | lower) }}
     # Traefik annotations
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
