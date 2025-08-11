@@ -3,6 +3,27 @@ entries:
   unifi:
   - apiVersion: v2
     appVersion: 9.3.45
+    created: "2025-08-11T11:12:18.399699794Z"
+    description: A Helm chart for UniFi Network Controller
+    digest: a90f09e28fd997fd44f7d7c11b55d11e4201c33f17d72916687f5552768e7d28
+    home: https://ui.com/
+    keywords:
+    - unifi
+    - networking
+    - controller
+    - ubiquiti
+    maintainers:
+    - email: me@hanlee.co
+      name: hannoeru
+    name: unifi
+    sources:
+    - https://github.com/jacobalberty/unifi-docker
+    type: application
+    urls:
+    - https://github.com/hannoeru/unifi-helm/releases/download/unifi-0.4.3/unifi-0.4.3.tgz
+    version: 0.4.3
+  - apiVersion: v2
+    appVersion: 9.3.45
     created: "2025-08-11T10:59:51.066826815Z"
     description: A Helm chart for UniFi Network Controller
     digest: 59a3094b030cd8efe62df96915ba90849c74ef9be7e4881296e85e45376ed2ae
@@ -153,4 +174,4 @@ entries:
     urls:
     - https://github.com/hannoeru/unifi-helm/releases/download/unifi-0.1.1/unifi-0.1.1.tgz
     version: 0.1.1
-generated: "2025-08-11T10:59:51.066859386Z"
+generated: "2025-08-11T11:12:18.399737752Z"
