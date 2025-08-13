@@ -219,6 +219,9 @@ mongodb:
   enabled: false
   # MongoDB architecture (standalone or replicaset)
   architecture: standalone
+  # Deployment strategy - use Recreate to prevent Multi-Attach volume issues
+  updateStrategy:
+    type: Recreate
   # Authentication configuration
   auth:
     enabled: true
