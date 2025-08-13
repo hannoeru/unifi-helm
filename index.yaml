@@ -3,6 +3,32 @@ entries:
   unifi:
   - apiVersion: v2
     appVersion: 9.3.45
+    created: "2025-08-13T16:25:45.652603632Z"
+    dependencies:
+    - condition: mongodb.enabled
+      name: mongodb
+      repository: oci://registry-1.docker.io/bitnamicharts
+      version: 16.5.40
+    description: A Helm chart for UniFi Network Controller
+    digest: 340ff7bee3e8571ce0ed66353deed85f8e21998316c8d7ba2155a71d95cf81b9
+    home: https://ui.com/
+    keywords:
+    - unifi
+    - networking
+    - controller
+    - ubiquiti
+    maintainers:
+    - email: me@hanlee.co
+      name: hannoeru
+    name: unifi
+    sources:
+    - https://github.com/jacobalberty/unifi-docker
+    type: application
+    urls:
+    - https://github.com/hannoeru/unifi-helm/releases/download/unifi-0.5.1/unifi-0.5.1.tgz
+    version: 0.5.1
+  - apiVersion: v2
+    appVersion: 9.3.45
     created: "2025-08-13T16:12:59.781109716Z"
     dependencies:
     - condition: mongodb.enabled
@@ -200,4 +226,4 @@ entries:
     urls:
     - https://github.com/hannoeru/unifi-helm/releases/download/unifi-0.1.1/unifi-0.1.1.tgz
     version: 0.1.1
-generated: "2025-08-13T16:12:59.781150923Z"
+generated: "2025-08-13T16:25:45.652630572Z"
