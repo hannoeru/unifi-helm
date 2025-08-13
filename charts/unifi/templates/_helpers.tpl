@@ -61,14 +61,3 @@ Create the name of the service account to use
 {{- end }}
 {{- end }}
 
-{{/*
-Generate consistent MongoDB password
-*/}}
-{{- define "unifi.mongodbPassword" -}}
-{{- $secret := lookup "v1" "Secret" .Release.Namespace (printf "%s-mongodb-password" (include "unifi.fullname" .)) -}}
-{{- if $secret -}}
-{{- $secret.data.password | b64dec -}}
-{{- else -}}
-{{- randAlphaNum 32 -}}
-{{- end -}}
-{{- end }}

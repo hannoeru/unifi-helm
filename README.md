@@ -30,7 +30,7 @@ helm install my-unifi unifi/unifi
 
 For detailed installation instructions, configuration options, and examples, see the individual chart documentation:
 
-- **[UniFi Network Controller](charts/unifi/README.md)** - Complete setup guide with MongoDB Community Operator, configuration examples, and troubleshooting
+- **[UniFi Network Controller](charts/unifi/README.md)** - Complete setup guide with Bitnami MongoDB subchart, configuration examples, and troubleshooting
 
 ## Development
 

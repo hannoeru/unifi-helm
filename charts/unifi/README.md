@@ -2,12 +2,12 @@
 
 ![Version: 0.2.0](https://img.shields.io/badge/Version-0.2.0-informational?style=flat-square) ![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![AppVersion: v9.3.43](https://img.shields.io/badge/AppVersion-v9.3.43-informational?style=flat-square)
 
-A Helm chart for deploying the UniFi Network Controller on Kubernetes with flexible database options including MongoDB Community Operator and external database support.
+A Helm chart for deploying the UniFi Network Controller on Kubernetes with flexible database options including Bitnami MongoDB subchart and external database support.
 
 ## Features
 
 - 🚀 **Easy Deployment**: One-command deployment of UniFi Network Controller
-- 🗄️ **Flexible Database Options**: MongoDB Community Operator or external database support
+- 🗄️ **Flexible Database Options**: Bitnami MongoDB subchart or external database support
 - 🔒 **Security**: Runs as non-root user with proper security contexts
 - 📊 **Monitoring**: Built-in health checks and readiness probes
 - 🌐 **Ingress**: Optional ingress configuration with TLS support
@@ -19,40 +19,18 @@ A Helm chart for deploying the UniFi Network Controller on Kubernetes with flexi
 
 - Kubernetes 1.19+
 - Helm 3.8+
-- A MongoDB database (MongoDB Community Operator or external MongoDB instance)
+- A MongoDB database (Bitnami MongoDB subchart or external MongoDB instance)
 
 ## Database Options
 
 The UniFi chart supports two database configuration options:
 
-1. **MongoDB Community Operator**: Deploys and manages MongoDB within your cluster
+1. **Bitnami MongoDB Subchart**: Automatically deploys and manages MongoDB within your cluster using the Bitnami MongoDB Helm chart
 2. **External Database**: Connects to an existing MongoDB instance
 
-### Option 1: MongoDB Community Operator (Optional)
+### Option 1: Bitnami MongoDB Subchart (Recommended)
 
-If you want to use the MongoDB Community Operator to manage MongoDB within your cluster, install it first:
-
-### Using Helm
-
-```bash
-# Add the MongoDB Community Operator Helm repository
-helm repo add mongodb https://mongodb.github.io/helm-charts
-helm repo update
-
-# Install the MongoDB Community Operator
-helm install community-operator mongodb/community-operator --set operator.watchNamespace="*" --namespace mongodb-system --create-namespace
-```
-
-### Verify Installation
-
-```bash
-# Check that the operator is running
-kubectl get pods -n mongodb-system
-
-# Expected output:
-# NAME                                           READY   STATUS    RESTARTS   AGE
-# mongodb-kubernetes-operator-<hash>             1/1     Running   0          1m
-```
+The Bitnami MongoDB subchart is included as a dependency and automatically deployed when enabled. No additional setup is required - simply set `mongodb.enabled=true` in your values.
 
 ## Installation
 
@@ -72,12 +50,11 @@ helm install my-unifi unifi/unifi \
   --set externalDatabase.host=your-mongodb-host
 ```
 
-### Installation with MongoDB Community Operator
+### Installation with Bitnami MongoDB Subchart
 
 ```bash
-# First install the MongoDB Community Operator (see above)
-# Then install UniFi with MongoDB Community Operator enabled
-helm install my-unifi unifi/unifi --set mongodbCommunity.enabled=true
+# Install UniFi with Bitnami MongoDB subchart enabled
+helm install my-unifi unifi/unifi --set mongodb.enabled=true --set mongodb.auth.password=your-secure-password
 ```
 
 ### Installation with External Database
@@ -105,20 +82,21 @@ helm install my-unifi unifi/unifi -f values.yaml
 
 **You must configure exactly one of the following database options:**
 
-#### MongoDB Community Operator Configuration
+#### Bitnami MongoDB Subchart Configuration
 
 | Parameter | Description | Default |
 |-----------|-------------|---------|
-| `mongodbCommunity.enabled` | Enable MongoDB Community Operator | `false` |
-| `mongodbCommunity.database` | MongoDB database name | `"unifi"` |
-| `mongodbCommunity.version` | MongoDB version | `"7.0.0"` |
-| `mongodbCommunity.persistence.enabled` | Enable MongoDB persistence | `true` |
-| `mongodbCommunity.persistence.size` | MongoDB storage size | `"8Gi"` |
-| `mongodbCommunity.persistence.storageClass` | MongoDB storage class | `""` |
-| `mongodbCommunity.resources.limits.cpu` | MongoDB CPU limit | `"1"` |
-| `mongodbCommunity.resources.limits.memory` | MongoDB memory limit | `"1Gi"` |
-| `mongodbCommunity.resources.requests.cpu` | MongoDB CPU request | `"500m"` |
-| `mongodbCommunity.resources.requests.memory` | MongoDB memory request | `"512Mi"` |
+| `mongodb.enabled` | Enable Bitnami MongoDB subchart | `false` |
+| `mongodb.auth.database` | MongoDB database name | `"unifi"` |
+| `mongodb.auth.username` | MongoDB username | `"unifi"` |
+| `mongodb.auth.password` | MongoDB password (required when enabled) | `""` |
+| `mongodb.auth.rootPassword` | MongoDB root password | `""` |
+| `mongodb.architecture` | MongoDB architecture (standalone/replicaset) | `"standalone"` |
+| `mongodb.persistence.enabled` | Enable MongoDB persistence | `true` |
+| `mongodb.persistence.size` | MongoDB storage size | `"8Gi"` |
+| `mongodb.persistence.storageClass` | MongoDB storage class | `""` |
+| `mongodb.resourcesPreset` | Resource preset (none/nano/small/medium/large) | `"small"` |
+| `mongodb.resources` | Custom resource limits/requests | `{}` |
 
 #### External Database Configuration
 
@@ -274,15 +252,18 @@ extraObjects:
 
 ## Examples
 
-### Basic Installation with MongoDB Community Operator
+### Basic Installation with Bitnami MongoDB Subchart
 
 ```yaml
 # mongodb-values.yaml
-mongodbCommunity:
+mongodb:
   enabled: true
+  auth:
+    password: "secure-mongodb-password"
   persistence:
     size: 20Gi
     storageClass: "fast-ssd"
+  resourcesPreset: "medium"
 
 persistence:
   enabled: true
@@ -369,12 +350,15 @@ podDisruptionBudget:
   enabled: true
   minAvailable: 1
 
-mongodbCommunity:
+mongodb:
   enabled: true
+  auth:
+    password: "secure-ha-password"
   persistence:
     enabled: true
     size: 50Gi
     storageClass: "fast-ssd"
+  resourcesPreset: "none"
   resources:
     limits:
       cpu: "2"
@@ -429,18 +413,15 @@ resources:
     cpu: 300m
     memory: 768Mi
 
-mongodbCommunity:
+mongodb:
   enabled: true
+  auth:
+    password: "rpi-mongodb-password"
   persistence:
     enabled: true
     storageClass: "local-path"
     size: 20Gi
-  resources:
-    limits:
-      memory: 1Gi
-    requests:
-      cpu: 100m
-      memory: 512Mi
+  resourcesPreset: "nano"
 
 nodeSelector:
   kubernetes.io/arch: arm64
@@ -516,17 +497,20 @@ service:
 
 ### MongoDB Connection Issues
 
-Check MongoDB Community resources:
+Check Bitnami MongoDB resources:
 
 ```bash
-# Check MongoDBCommunity resource status
-kubectl get mongodbcommunity
+# Check MongoDB pod status
+kubectl get pods -l app.kubernetes.io/name=mongodb
 
 # Check MongoDB pod logs
-kubectl logs -l app=my-unifi-mongodb-svc
+kubectl logs -l app.kubernetes.io/name=mongodb,app.kubernetes.io/component=mongodb
 
-# Check MongoDB Community Operator logs
-kubectl logs -n mongodb-system deployment/mongodb-kubernetes-operator
+# Check MongoDB service
+kubectl get svc -l app.kubernetes.io/name=mongodb
+
+# Test MongoDB connectivity
+kubectl exec -it deployment/my-unifi-mongodb -- mongosh --eval "db.runCommand('ping')"
 ```
 
 ### UniFi Controller Issues
@@ -547,7 +531,7 @@ kubectl describe pod -l app.kubernetes.io/name=unifi
 
 ### Common Issues
 
-1. **MongoDB not starting**: Verify MongoDB Community Operator is installed and running
+1. **MongoDB not starting**: Check MongoDB pod logs and resource constraints
 2. **Persistent volume issues**: Check storage class availability and permissions
 3. **Network connectivity**: Verify service configuration and firewall rules
 4. **Resource constraints**: Check resource limits and node capacity
@@ -556,10 +540,10 @@ kubectl describe pod -l app.kubernetes.io/name=unifi
 
 ```bash
 # Test MongoDB connectivity from UniFi pod
-kubectl exec -it deployment/my-unifi -- nc -zv my-unifi-mongodb-svc 27017
+kubectl exec -it deployment/my-unifi -- nc -zv my-unifi-mongodb 27017
 
-# Check MongoDB authentication
-kubectl get secrets -l app=my-unifi-mongodb
+# Check MongoDB authentication secrets
+kubectl get secrets -l app.kubernetes.io/name=mongodb
 
 # Validate chart templates
 helm template my-unifi unifi/unifi --debug
@@ -587,11 +571,10 @@ helm uninstall my-unifi
 # Note: PVCs and MongoDB data are preserved by default
 # To remove all data:
 kubectl delete pvc -l app.kubernetes.io/instance=my-unifi
-kubectl delete mongodbcommunity my-unifi-mongodb
 ```
 
 ## Source Code
 
 - **Chart Source**: [https://github.com/hannoeru/unifi-helm](https://github.com/hannoeru/unifi-helm)
 - **UniFi Docker Image**: [https://github.com/linuxserver/docker-unifi-network-application](https://github.com/linuxserver/docker-unifi-network-application)
-- **MongoDB Community Operator**: [https://github.com/mongodb/mongodb-kubernetes-operator](https://github.com/mongodb/mongodb-kubernetes-operator)
+- **Bitnami MongoDB Helm Chart**: [https://github.com/bitnami/charts/tree/main/bitnami/mongodb](https://github.com/bitnami/charts/tree/main/bitnami/mongodb)

@@ -33,8 +33,14 @@ install-yamllint: ## Install yamllint for YAML linting
 install-kind: ## Install kind for local Kubernetes testing
 	@which kind > /dev/null || brew install kind
 
+# Update chart dependencies
+deps: ## Update chart dependencies
+	@echo "Updating chart dependencies..."
+	@helm dependency update $(CHART_DIR)
+	@echo "Dependencies updated successfully!"
+
 # Build and package chart
-build: ## Build and package the chart
+build: deps ## Build and package the chart
 	@echo "Building chart..."
 	@helm package $(CHART_DIR) -d dist/
 	@echo "Chart built successfully!"
@@ -46,13 +52,13 @@ test-unit: install-helm-unittest ## Run helm unittest tests
 	@echo "Unit tests completed!"
 
 # Run chart-testing lint
-test-lint: install-chart-testing install-yamllint ## Run chart-testing lint
+test-lint: deps install-chart-testing install-yamllint ## Run chart-testing lint
 	@echo "Running chart-testing lint..."
 	@ct lint --config $(CT_CONFIG) --chart-dirs charts
 	@echo "Lint tests completed!"
 
 # Run chart-testing install (requires Kubernetes cluster)
-test-install: install-chart-testing ## Run chart-testing install tests
+test-install: deps install-chart-testing ## Run chart-testing install tests
 	@echo "Running chart-testing install..."
 	@echo "Note: This requires a running Kubernetes cluster"
 	@ct install --config $(CT_CONFIG) --chart-dirs charts

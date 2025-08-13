@@ -32,16 +32,16 @@ podSecurityContext:
   # Set volume ownership to UniFi user (1000)
   fsGroup: 1000
 
-securityContext:
+securityContext: {}
   # Allow s6-overlay to drop privileges after initialization
-  allowPrivilegeEscalation: true
-  capabilities:
-    add:
-      # Required for s6-overlay to switch user/group contexts
-      - SETGID
-      - SETUID
-      # Required for file permission management during initialization
-      - DAC_OVERRIDE
+  # allowPrivilegeEscalation: true
+  # capabilities:
+  #   add:
+  #     # Required for s6-overlay to switch user/group contexts
+  #     - SETGID
+  #     - SETUID
+  #     # Required for file permission management during initialization
+  #     - DAC_OVERRIDE
 
 service:
   type: ClusterIP
@@ -211,40 +211,45 @@ extraObjects: []
 
 # Database configuration
 # Choose one of the following options:
-# 1. MongoDB Community Operator (managed MongoDB instance)
+# 1. Bitnami MongoDB subchart (recommended)
 # 2. External Database (connect to existing MongoDB instance)
 
-# MongoDB Community Kubernetes Operator configuration
-mongodbCommunity:
+# Bitnami MongoDB subchart configuration
+mongodb:
   enabled: false
-  database: "unifi"
-  version: "7.0.0"
-  # MongoDB users configuration - admin user will be created automatically
-  users:
-    - name: "unifi"
-      db: "admin"
-      passwordSecretRef:
-        name: unifi-mongodb-password
-      roles:
-        - name: dbOwner
-          db: unifi
-        - name: dbOwner
-          db: unifi_stat
-        - name: dbOwner
-          db: unifi_audit
-      scramCredentialsSecretName: unifi-scram
+  # MongoDB architecture (standalone or replicaset)
+  architecture: standalone
+  # Authentication configuration
+  auth:
+    enabled: true
+    rootPassword: "password"
+    usernames: ["unifi"]
+    passwords: ["password"]
+    databases: ["unifi"]
+  passwordUpdateJob:
+    enabled: true
   # Storage configuration
   persistence:
     enabled: true
     size: 8Gi
     storageClass: ""
-  # Resource configuration
-  resources:
-    limits:
-      memory: "1Gi"
-    requests:
-      cpu: "500m"
-      memory: "512Mi"
+  # MongoDB initialization scripts
+  initdbScripts:
+    unifi.sh: |
+        #!/bin/bash
+        mongosh <<EOF
+        use admin
+        db.auth("${MONGODB_ROOT_USER}", "${MONGODB_ROOT_PASSWORD}")
+        db.createUser({
+          user: "${MONGODB_EXTRA_USERNAMES}",
+          pwd: "${MONGODB_EXTRA_PASSWORDS}",
+          roles: [
+            { db: "${MONGODB_EXTRA_DATABASES}", role: "dbOwner" },
+            { db: "${MONGODB_EXTRA_DATABASES}_stat", role: "dbOwner" },
+            { db: "${MONGODB_EXTRA_DATABASES}_audit", role: "dbOwner" }
+          ]
+        })
+        EOF
 
 # External Database configuration
 # Use this when connecting to an existing MongoDB instance

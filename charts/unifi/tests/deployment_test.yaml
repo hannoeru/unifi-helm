@@ -39,32 +39,30 @@ tests:
           path: spec.replicas
           value: 3
 
-  - it: should render deployment with MongoDB Community Operator enabled
+  - it: should render deployment with Bitnami MongoDB subchart enabled
     set:
-      mongodbCommunity.enabled: true
-      mongodbCommunity.database: unifi
+      mongodb.enabled: true
+      mongodb.auth.database: unifi
+      mongodb.auth.username: unifi
     asserts:
       - contains:
           path: spec.template.spec.containers[0].env
           content:
             name: MONGO_USER
-            valueFrom:
-              secretKeyRef:
-                name: RELEASE-NAME-unifi-mongodb-admin-unifi
-                key: username
+            value: "unifi"
       - contains:
           path: spec.template.spec.containers[0].env
           content:
             name: MONGO_PASS
             valueFrom:
               secretKeyRef:
-                name: RELEASE-NAME-unifi-mongodb-admin-unifi
-                key: password
+                name: RELEASE-NAME-unifi-mongodb
+                key: mongodb-passwords
       - contains:
           path: spec.template.spec.containers[0].env
           content:
             name: MONGO_HOST
-            value: "RELEASE-NAME-unifi-mongodb-svc.NAMESPACE.svc.cluster.local"
+            value: "RELEASE-NAME-unifi-mongodb"
       - contains:
           path: spec.template.spec.containers[0].env
           content:

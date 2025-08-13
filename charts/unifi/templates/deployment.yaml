@@ -64,23 +64,20 @@ spec:
               value: {{ .Values.unifi.puid | quote }}
             - name: PGID
               value: {{ .Values.unifi.pgid | quote }}
-            {{- if .Values.mongodbCommunity.enabled }}
+            {{- if .Values.mongodb.enabled }}
             - name: MONGO_USER
-              valueFrom:
-                secretKeyRef:
-                  name: {{ include "unifi.fullname" . }}-mongodb-admin-unifi
-                  key: username
+              value: {{ default (index .Values.mongodb.auth.usernames 0) .Values.mongodb.auth.username | quote }}
             - name: MONGO_PASS
               valueFrom:
                 secretKeyRef:
-                  name: {{ include "unifi.fullname" . }}-mongodb-admin-unifi
-                  key: password
+                  name: {{ include "unifi.fullname" . }}-mongodb
+                  key: mongodb-passwords
             - name: MONGO_HOST
-              value: {{ printf "%s-mongodb-svc.%s.svc.cluster.local" (include "unifi.fullname" .) .Release.Namespace | quote }}
+              value: {{ printf "%s-mongodb" (include "unifi.fullname" .) | quote }}
             - name: MONGO_PORT
-              value: "27017"
+              value: {{ .Values.mongodb.service.ports.mongodb | default 27017 | quote }}
             - name: MONGO_DBNAME
-              value: {{ .Values.mongodbCommunity.database | quote }}
+              value: "unifi"
             - name: MONGO_AUTHSOURCE
               value: "admin"
             {{- else if .Values.externalDatabase.enabled }}

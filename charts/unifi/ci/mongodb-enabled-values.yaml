@@ -1,18 +1,9 @@
-# Test values with MongoDB Community Operator enabled
-mongodbCommunity:
+# Test values with Bitnami MongoDB subchart enabled
+mongodb:
   enabled: true
-  database: "unifi"
-  version: "7.0.0"
   persistence:
     enabled: true
     size: 1Gi
-  resources:
-    limits:
-      cpu: 500m
-      memory: 512Mi
-    requests:
-      cpu: 100m
-      memory: 256Mi
 
 persistence:
   enabled: true
